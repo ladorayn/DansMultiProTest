@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">DansMultiProTest</string>
+    <string name="facebook_app_id">791044225916898</string>
+    <string name="fb_login_protocol_scheme">fb791044225916898</string>
+    <string name="facebook_client_token">e92649907364193b2e1298b50388f40b</string>
+    <string name="logout">Log Out</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+</resources>

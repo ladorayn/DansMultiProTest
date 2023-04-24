@@ -1,0 +1,121 @@
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+
+   <androidx.cardview.widget.CardView
+       android:id="@+id/searchCard"
+       android:layout_width="match_parent"
+       android:layout_height="wrap_content"
+       android:layout_marginHorizontal="16dp"
+       >
+
+      <LinearLayout
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:orientation="horizontal">
+
+         <!-- SearchView -->
+         <androidx.appcompat.widget.SearchView
+             android:id="@+id/searchView"
+             android:layout_width="0dp"
+             android:layout_weight="1"
+             android:layout_height="wrap_content"
+             app:queryHint="search"
+             app:defaultQueryHint="search" />
+
+         <ImageButton
+             android:id="@+id/filterToggleButton"
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:src="@drawable/ic_arrow_up"
+             android:backgroundTint="@android:color/transparent"/>
+
+      </LinearLayout>
+
+   </androidx.cardview.widget.CardView>
+
+   <!-- CardView with filter section -->
+   <androidx.cardview.widget.CardView
+       android:id="@+id/filterCard"
+       android:layout_width="match_parent"
+       android:layout_height="wrap_content"
+       android:layout_below="@id/searchCard"
+       android:layout_margin="16dp"
+       app:cardCornerRadius="8dp"
+       app:cardElevation="8dp"
+       android:visibility="gone">
+
+      <LinearLayout
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:orientation="vertical"
+          android:padding="5dp">
+
+         <LinearLayout
+             android:layout_width="match_parent"
+             android:layout_height="wrap_content"
+             android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Fullname"
+                android:textSize="14sp"/>
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/fullnameSwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+         </LinearLayout>
+
+         <LinearLayout
+             android:layout_width="match_parent"
+             android:layout_height="wrap_content"
+             android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Location"
+                android:textSize="14sp"/>
+
+            <EditText
+                android:id="@+id/locationEditText"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:background="@drawable/card_view_bg"
+                android:textDirection="ltr" />
+
+         </LinearLayout>
+
+
+         <Button
+             android:id="@+id/applyFilterButton"
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:layout_gravity="end"
+             android:textAllCaps="false"
+             android:backgroundTint="@android:color/darker_gray"
+             android:textColor="@android:color/black"
+             android:text="Apply Filter"/>
+
+      </LinearLayout>
+
+   </androidx.cardview.widget.CardView>
+
+   <!-- RecyclerView -->
+   <androidx.recyclerview.widget.RecyclerView
+       android:id="@+id/recyclerView"
+       android:layout_width="match_parent"
+       android:layout_height="wrap_content"
+       android:layout_below="@id/filterCard"
+       android:layout_margin="16dp"/>
+
+</RelativeLayout>

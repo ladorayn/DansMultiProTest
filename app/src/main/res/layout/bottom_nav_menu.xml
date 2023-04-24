@@ -1,0 +1,19 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center">
+
+    <ImageView
+        android:id="@+id/bottom_nav_icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_home_foreground"/>
+
+    <TextView
+        android:id="@+id/bottom_nav_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Home"/>
+
+</LinearLayout>
