@@ -50,6 +50,8 @@ public class LoginActivity extends AppCompatActivity {
 
         getSupportActionBar().setElevation(0);
 
+        getSupportActionBar().setTitle("");
+
         gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
                 .build();
