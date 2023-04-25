@@ -18,8 +18,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class JobListAdapter extends RecyclerView.Adapter<JobListAdapter.ViewHolder> {
-    private List<Job> jobs;
+    private List<Job> jobs = new ArrayList<>();
+
     private Context context;
+
+    public JobListAdapter(Context context) {
+        this.context = context;
+    }
+
 
     public interface OnJobItemClickListener {
         void onJobItemClick(Job job);
@@ -29,11 +35,6 @@ public class JobListAdapter extends RecyclerView.Adapter<JobListAdapter.ViewHold
 
     public void setOnJobItemClickListener(OnJobItemClickListener listener) {
         this.listener = listener;
-    }
-
-    public JobListAdapter(Context context) {
-        jobs = new ArrayList<>();
-        this.context = context;
     }
 
     @NonNull
@@ -67,8 +68,13 @@ public class JobListAdapter extends RecyclerView.Adapter<JobListAdapter.ViewHold
         return jobs == null ? 0 : jobs.size();
     }
 
-    public void setJobs(List<Job> jobsList) {
-        jobs = jobsList;
+    public void addJobs(List<Job> jobsList) {
+        this.jobs.addAll(jobsList);
+        notifyDataSetChanged();
+    }
+
+    public void clear() {
+        jobs.clear();
         notifyDataSetChanged();
     }
 

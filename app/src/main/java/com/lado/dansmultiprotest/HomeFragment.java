@@ -10,40 +10,50 @@ import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.lado.dansmultiprotest.adapter.JobListAdapter;
-import com.lado.dansmultiprotest.databinding.FragmentAccountBinding;
 import com.lado.dansmultiprotest.databinding.FragmentHomeBinding;
 import com.lado.dansmultiprotest.model.Job;
-import com.lado.dansmultiprotest.viewmodel.JobListViewModel;
+import com.lado.dansmultiprotest.network.JobsApi;
+import com.lado.dansmultiprotest.network.RetrofitClient;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 /**
  * A simple {@link Fragment} subclass.
  * Use the {@link HomeFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class HomeFragment extends Fragment {
+public class HomeFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener {
 
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
 
-    private JobListViewModel jobListViewModel;
     private FragmentHomeBinding fragmentHomeBinding;
+    private LinearLayoutManager linearLayoutManager;
+    private RecyclerView recyclerView;
     private JobListAdapter adapter;
     private boolean isFullTime = false;
 
     private String searchTerm = "";
     private String location = "";
+    private int page = 1;
+    private int totalPage = 2;
     private boolean isLoading = false;
 
     private List<Job> jobs;
@@ -91,18 +101,43 @@ public class HomeFragment extends Fragment {
 
         fragmentHomeBinding = FragmentHomeBinding.inflate(getLayoutInflater());
 
-        jobListViewModel = new ViewModelProvider(this).get(JobListViewModel.class);
-
         fragmentHomeBinding.filterToggleButton.setOnClickListener(filterToggleListener);
 
-        RecyclerView recyclerView = fragmentHomeBinding.recyclerView;
-        adapter = new JobListAdapter(getContext());
-        recyclerView.setAdapter(adapter);
-        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getActivity());
-        recyclerView.setLayoutManager(linearLayoutManager);
-        recyclerView.addOnScrollListener(scrollListener);
+        recyclerView = fragmentHomeBinding.recyclerView;
+
+        linearLayoutManager = new LinearLayoutManager(getActivity());
+        fragmentHomeBinding.swipeRefresh.setOnRefreshListener(this);
+        setupRecycleView();
+        getJobs(false);
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+
+                int visibleItemCount = linearLayoutManager.getChildCount();
+                int pastVisibleItem = linearLayoutManager.findFirstVisibleItemPosition();
+                int total = adapter.getItemCount();
+                if (!isLoading && page < totalPage) {
+                    if (visibleItemCount + pastVisibleItem >= total) {
+                        page++;
+                        getJobs(false);
+                    }
+                }
+            }
+        });
+
         fragmentHomeBinding.searchView.setOnQueryTextListener(queryListener);
         fragmentHomeBinding.applyFilterButton.setOnClickListener(submitListener);
+
+        fragmentHomeBinding.swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                adapter.clear();
+                page = 1;
+                getJobs(true);
+            }
+        });
 
         adapter.setOnJobItemClickListener(new JobListAdapter.OnJobItemClickListener() {
             @Override
@@ -114,13 +149,60 @@ public class HomeFragment extends Fragment {
             }
         });
 
-        jobListViewModel.getJobList().observe(getViewLifecycleOwner(), jobs1 -> {
-            adapter.setJobs(jobs1);
-            recyclerView.setAdapter(adapter);
-        });
-        jobListViewModel.loadMoreJobs(searchTerm, location, isFullTime);
-
         return fragmentHomeBinding.getRoot();
+    }
+
+    private void getJobs(boolean isOnRefresh) {
+        isLoading = true;
+        if (!isOnRefresh) {
+            fragmentHomeBinding.progressBar.setVisibility(View.VISIBLE);
+            HashMap<String, String> parameters = new HashMap<>();
+            parameters.put("page", Integer.toString(page));
+            Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    JobsApi jobsApi = RetrofitClient.getInstance().create(JobsApi.class);
+                    jobsApi.getJobs(parameters).enqueue(new Callback<List<Job>>() {
+                        @Override
+                        public void onResponse(Call<List<Job>> call, Response<List<Job>> response) {
+                            if (response.isSuccessful()) {
+                                List<Job> jobs = response.body();
+
+                                if (jobs != null) {
+                                    adapter.addJobs(jobs);
+                                }
+
+                                fragmentHomeBinding.progressBar.setVisibility(View.GONE);
+                                isLoading = false;
+                                fragmentHomeBinding.swipeRefresh.setRefreshing(false);
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Call<List<Job>> call, Throwable t) {
+                            Toast.makeText(getContext(), "Failed to render", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }, 100);
+
+        }
+    }
+
+    private void setupRecycleView() {
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setLayoutManager(linearLayoutManager);
+
+        adapter = new JobListAdapter(getContext());
+        recyclerView.setAdapter(adapter);
+    }
+
+    @Override
+    public void onRefresh() {
+        adapter.clear();
+        page = 1;
+        getJobs(true);
     }
 
     private View.OnClickListener filterToggleListener = v -> {
@@ -139,23 +221,62 @@ public class HomeFragment extends Fragment {
         isFullTime = fragmentHomeBinding.fullnameSwitch.isChecked();
 
         if (searchTerm.equals("") && location.equals("") && !isFullTime) {
-            jobListViewModel.resetLoadJobs(searchTerm, location, false);
+            adapter.clear();
+            page = 1;
+            getJobs(true);
         }
 
-        jobListViewModel.loadFilteredJobs(searchTerm, location, isFullTime);
-        Log.i("CARI", searchTerm);
-        Log.i("TEMPAT", location);
+        getJobsFilter(false, searchTerm, location, isFullTime);
         fragmentHomeBinding.filterCard.setVisibility(View.GONE);
     };
+
+    private void getJobsFilter(boolean isOnRefresh, String searchTerm, String location, boolean isFullTime) {
+        adapter.clear();
+        isLoading = true;
+        if (!isOnRefresh) {
+            fragmentHomeBinding.progressBar.setVisibility(View.VISIBLE);
+            HashMap<String, String> parameters = new HashMap<>();
+            parameters.put("description", searchTerm);
+            parameters.put("location", location);
+            parameters.put("type", Boolean.toString(isFullTime));
+            Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    JobsApi jobsApi = RetrofitClient.getInstance().create(JobsApi.class);
+                    jobsApi.getJobs(parameters).enqueue(new Callback<List<Job>>() {
+                        @Override
+                        public void onResponse(Call<List<Job>> call, Response<List<Job>> response) {
+                            if (response.isSuccessful()) {
+                                List<Job> jobs = response.body();
+
+                                if (jobs != null) {
+                                    adapter.addJobs(jobs);
+                                }
+
+                                fragmentHomeBinding.progressBar.setVisibility(View.GONE);
+                                isLoading = false;
+                                fragmentHomeBinding.swipeRefresh.setRefreshing(false);
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Call<List<Job>> call, Throwable t) {
+                            Toast.makeText(getContext(), "Failed to render", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }, 100);
+
+        }
+    }
 
     private SearchView.OnQueryTextListener queryListener = new SearchView.OnQueryTextListener() {
         @Override
         public boolean onQueryTextSubmit(String query) {
 
-            Log.i("QUERYSUB", query);
-
             searchTerm = query;
-            jobListViewModel.loadFilteredJobs(searchTerm, location, isFullTime);
+            getJobsFilter(false, searchTerm, location, isFullTime);
             return true;
         }
 
@@ -165,21 +286,5 @@ public class HomeFragment extends Fragment {
         }
     };
 
-    private RecyclerView.OnScrollListener scrollListener = new RecyclerView.OnScrollListener() {
-        @Override
-        public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-            super.onScrolled(recyclerView, dx, dy);
 
-            Log.i("ONSCROLL", "DISINI");
-
-            LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
-            int totalItemCount = layoutManager.getItemCount();
-            int lastVisibleItem = layoutManager.findLastVisibleItemPosition();
-
-            if (!jobListViewModel.isLoading() && totalItemCount <= (lastVisibleItem + 5)) {
-                isLoading = true;
-                jobListViewModel.loadMoreJobs(searchTerm, location, isFullTime);
-            }
-        }
-    };
 }
